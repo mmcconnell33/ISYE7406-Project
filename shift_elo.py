@@ -1,23 +1,17 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Feb 18 15:16:10 2023
 
-@author: mmcco
-"""
 
 '''
-
 TODO:
     
     join shift pbp data with Moneypuck shot data
     matchup 'shotID' from mp 
     
 
-
-
 '''
 
-
+import time
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,39 +33,61 @@ def calc_elo_diff(elo1, elo2, k, mov, team1_win):
 
 
 
-# load in play by play data
-print('Loading play by play data...')
-path = r'C:/Users/mmcco/Documents/Sports Analytics/Hockey/pbp data'
-csv = '/nhl_pbp20212022.csv'
-csv_path = path + csv
-pbp_df = pd.read_csv(csv_path)
-print('play by play data loaded')
+
+# cd into correct directory as necessary
+path = r'./pbp data'
+
+# initialize dataframe
+pbp_df = pd.DataFrame()
+
+start_time = time.time()
+for filename in os.listdir(path):
+    
+    print(f'Loading {filename} ...')
+    current_df = pd.read_csv(f'{path}/{filename}')
+    pbp_df = pd.concat([pbp_df, current_df])
 
 
+end_time = time.time()
+run_time = end_time - start_time
 
-# load in Moneypuck data
-print('Loading shot data...')
-path = r'C:/Users/mmcco/Documents/Sports Analytics/Hockey/Moneypuck Data/shots'
-csv = '/shots_2021.csv'
-csv_path = path + csv
-mp_df = pd.read_csv(csv_path)
-print('shot data loaded')
+print(f'All play by play data loaded in {run_time} seconds')
+
+
+# load in shot data
+path = r'./shot data'
+
+# initialize dataframe
+mp_df = pd.DataFrame()
+
+start_time = time.time()
+for filename in os.listdir(path):
+    
+    print(f'Loading {filename} ...')
+    current_df = pd.read_csv(f'{path}/{filename}')
+    mp_df = pd.concat([mp_df, current_df])
+
+
+end_time = time.time()
+run_time = end_time - start_time
+print(f'All shot data loaded in {run_time} seconds')
+
+
 
 # create cumulative time column for joining purposes
 # time should add 1200 seconds for every period that has past because in 
 # the pbp data, the 'Seconds_Elapsed' field resets to 0 at every period
-
 pbp_df['cumulative_time'] = (1200 * (pbp_df['Period']-1))+ pbp_df['Seconds_Elapsed']
 
 
-# join the two on game_id, time elapsed, event type (shot), and x,y coords
+# join the two on game_id, time elapsed, event type (shot, miss, goal)
 new_df = pd.merge(pbp_df, mp_df, how = 'inner',
-                  left_on = ['Game_Id', 'cumulative_time', 'p1_ID', 'Event', 'xC', 'yC'],
-                  right_on = ['game_id', 'time', 'shooterPlayerId', 'event', 'xCord', 'yCord'])
+                  left_on = ['Game_Id', 'cumulative_time', 'p1_ID', 'Event'],
+                  right_on = ['game_id', 'time', 'shooterPlayerId', 'event'])
 
 
 # find shots from mp shot but that are missing from joined df
-mp_df[~mp_df.isin(new_df)].dropna()
+#mp_df[~mp_df.isin(new_df)].dropna()
 
 
 # filter to 5v5 only
@@ -292,6 +308,11 @@ print(elo_df[['name', 'elo_current']].iloc[0:50])
 print(elo_df[['name', 'elo_current']].iloc[-50:])
 
 
+name = 'Patrice Bergeron'
+
+elo_df[elo_df['name'] == name.upper()]['qoc_list']
+
+
 
 def graph_elo(name):
     
@@ -300,6 +321,11 @@ def graph_elo(name):
     
     plt.plot(x,y)
     plt.show()
+    
+    
+graph_elo('claude giroux')
+
+    
     
     
     
